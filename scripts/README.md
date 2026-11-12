@@ -27,7 +27,8 @@ export COMFY_URL=http://127.0.0.1:8188
 | 看进度（命令行） | `python3 ws_progress.py 60`（工作台开着时别用，会抢走进度） |
 | 取结果 | `python3 wait_download.py <prompt_id> out/video` |
 | 说话人检查 | `python3 speaker_grid.py out/video/seg3.mp4 ../examples/lines.json out/qa` |
-| 放大 | `python3 upscale_video.py in.mp4 hd.mp4 RealESRGAN_x2.pth 1080 1500` |
+| 放大（ReCaVSR，机器上一步超分） | `python3 recavsr_upscale.py raw.mp4 out/hd --scale 2.5`：Wan2.2 一步流式超分，4090 上整条 15 秒片子几十秒，真细节；机器要先装 `install_recavsr.py`（见 ../references/公司4090使用说明.md） |
+| 放大（本机 RealESRGAN，备用） | `python3 upscale_video.py in.mp4 hd.mp4 RealESRGAN_x2.pth 1080 1500`：真实动物毛发会变塑料，只给没有 ReCaVSR 的场合 |
 | 字幕和响度 | `python3 post_subtitle_loud.py hd.mp4 final.mp4 ../examples/subs.json` |
 | 封面 | `python3 make_cover.py frame.png out "第一行" "第二行" "标签"` |
 

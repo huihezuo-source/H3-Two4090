@@ -13,4 +13,5 @@
 2. 全景首帧：`h3_image.py` 以空客厅为图 1、两张头像为图 2/3、远景无头身体为图 4/5 改图（提示词在 `提示词.md`）。
 3. 单猫近景不要从全景裁：再用 `h3_image.py` 以全景 + 该猫头像生成，提示词写 centred、space above the ears、另一只猫 removed。
 4. 把图片路径填进 `h3_job_第一期.json`，`h3_ref2va.py ... --wait` 出片；4 步 turbo 只当草稿，交付用 20 步。
-5. whisper 核对台词，`speaker_grid.py` 逐句看嘴，再整片每秒 4 帧看一遍观感；lanczos 缩到 1080×1500，`post_subtitle_loud.py` 烧字幕调响度，`make_cover.py` 出封面。
+5. whisper 核对台词，`speaker_grid.py` 逐句看嘴，再整片每秒 4 帧看一遍观感。
+6. 放大：`recavsr_upscale.py 原片.mp4 out/hd --scale 2.5 --color-fix wavelet`（576×800 → 1440×2000，XW 上 93 秒，毛发胡须是真细节；默认 none 会偏亮偏蓝），再 `post_subtitle_loud.py` 烧字幕调响度，`make_cover.py` 出封面。没有 ReCaVSR 的机器退回 lanczos 缩到 1080×1500。

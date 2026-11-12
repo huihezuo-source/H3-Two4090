@@ -172,6 +172,24 @@ ComfyUI 0.44 自带的 PH3ImageConditioning / PH3ImageVAE 是预发布版，和�
 
 实测（4090，cu130）：两只狗全景首帧 1728×2368（400 万像素）每张约 29 秒；Qwen-Image-Edit-2511 出 896×1232 每张约 2.4 分钟。H3 Image 一次就把“深棕色杏仁眼、不露眼白”画对了（Qwen 每期都要单独修眼睛），帽子图案和毛发更清楚。缺点：整体偏橙红、更饱和，取景更紧，“屋檐下一盏暖黄色的灯”被画成现代吊灯，要写清“a paper lantern”。不要拿它的输出再改（会发花）。
 
-## 放大
+## 放大：ReCaVSR 一步超分（首选）
 
-RealESRGAN_x2 用 spandrel 加载，Mac 上走 mps 逐帧推理，再用 ffmpeg lanczos 缩放到目标尺寸。
+节点包 ComfyUI-ReCaVSR（github.com/PedroMarinhoDev/ComfyUI-ReCaVSR，2026-11-10 发布，Comfy Registry 里叫 comfyui-recavsr）。ReCaVSR 是中科大基于 Wan2.2 TI2V-5B 的一步流式扩散超分：先 21 帧、再每 8 帧一块，每块只去噪 1 步，复用上一块的潜变量和 KV 缓存，自带的 FlashDecoder 每块出来就解码写盘，所以长片只多花时间不涨显存（作者：4 分钟 1080p 片子 2 倍到 4K，4090 约 25 分钟）。要求 ComfyUI 0.44+、Python 3.11+（triton-windows）。
+
+装法：`scripts/install_recavsr.py`（Windows 一键：节点包 zip → comfy-kitchen 0.2.41 + triton-windows<3.8 + opencv-python-headless → 三个模型文件 → 重启 ComfyUI）。模型放 `models/recavsr/`：`transformer_int8_convrot.safetensors` 6.27 GB（PedroMarinhoDev/ReCaVSR-ComfyUI，比 bf16 省 4 GB 显存、快 1.8 倍，47 dB 内无肉眼差别）、`prompt.safetensors`、`flashdecoder.safetensors`（kopper/ReCaVSR）。
+
+工作流：LoadVideo → ReCaVSRLoader(transformer) → ReCaVSRUpscale(video, scale, color_fix, seed, decoder=flashdecoder, kernels=fast, kv_offload=false, encoder=auto) → SaveVideo。脚本 `scripts/recavsr_upscale.py`，视频连 VIDEO 口（不是 IMAGE），音轨和帧率原样带过去。
+
+实测（XW 4090，2026-11-12，两只猫第一期 576×800、362 帧、15 秒）：
+
+| scale | 输出 | 用时 | 结论 |
+|---|---|---|---|
+| 2.5 | 1440×2000 | 93 秒（首次 101 秒，含 triton 编译和读模型） | 交付用 |
+| 4 | 2304×3200 | 223 秒 | 缩回 1440×2000 后和 2.5 倍看不出差别，不值 |
+
+- `color_fix`：`none` 整体偏亮偏蓝（五帧平均 RGB 比原片 +3 到 +5）；`wavelet` 和原片差在 ±1 以内，**用 wavelet**。
+- 质感：lanczos 放大的猫毛是糊的色块，ReCaVSR 出一根根毛、胡须、虹膜纹理和针织沙发的针脚，没有塑料感，也没有编出假字（手机、项圈牌都干净）。
+- 切镜：作者说明硬切后的前几块会带上一个镜头的残影闪烁；本片 4 处硬切后前 4 帧逐帧看没发现，但每次仍要查。闪烁明显时按镜头拆段分别放大。
+- 输出：`auto` 走 HEVC NVENC CQ19，Mac 上接着 `post_subtitle_loud.py` 烧字幕时重编成 x264。
+
+备用：`upscale_video.py` 用 spandrel 加载 RealESRGAN_x2，Mac 上走 mps 逐帧推理，再用 ffmpeg lanczos 缩放到目标尺寸。真实动物毛发会变塑料，只在没有 ReCaVSR 的机器上用。

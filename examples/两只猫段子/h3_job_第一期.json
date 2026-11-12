@@ -1,0 +1,37 @@
+{
+ "prompt": "subject_definitions:\n<Subject 1> is the old apartment living room in <Picture 1>: a worn beige fabric sofa with a light-grey knitted blanket, a cream-white wall, a window with white sheer curtains on the right letting in warm afternoon sunlight, a small light-wood coffee table with a black phone lying on it.\n<Subject 2> is the fat blue cat in <Picture 1>, a very fat British Shorthair with solid blue-grey short fur, big chubby cheeks, round copper-orange eyes and a narrow red collar; <Picture 3> is a close-up of its face.\n<Subject 3> is the fat orange cat in <Picture 1>, a very fat orange tabby with a round face, round amber eyes, a pink nose, a white chin and chest, and a narrow dark-blue collar with a small bell; <Picture 2> is a close-up of its face.\n\nsummary:\n[reference generation] In <Subject 1> on a lazy afternoon, <Subject 2> asks <Subject 3> why it got even fatter; <Subject 3> explains it eats when the market drops and celebrates when it rises, and says it will lose weight on the day it breaks even; both cats burst out laughing. Five shots, realistic live-action comedy with two real cats talking in Mandarin.\n\nretention_analysis:\n<Subject 1> (every shot): fully_preserved - sofa, knitted blanket, wall, window light, coffee table and phone are retained.\n<Subject 2> (shots 1, 3, 5): fully_preserved - blue-grey fur, chubby cheeks, copper-orange eyes and red collar are retained.\n<Subject 3> (shots 1, 2, 4, 5): fully_preserved - orange tabby fur, round amber eyes, white chin and chest, dark-blue collar with bell are retained.\n\ndetailed_description:\nThe target video is a realistic, warm live-action comedy in natural afternoon light, steady handheld-looking camera, vertical frame, shot like a real phone video of two real cats: fur, whiskers and eyes stay exactly as real cats, and when a cat speaks its mouth moves only a little, like a real cat chattering, with small jaw movements and no human-like lips or teeth. <Subject 3> sits on the left side of the sofa and <Subject 2> on the right side throughout; their left-right positions never swap. <Subject 2> (S1) speaks in a clear, slightly deep, dry middle-aged male voice; <Subject 3> (S2) speaks in a lazy, drawling young male voice. All lines are in Mandarin Chinese.\n[Shot 1] A wide shot of <Subject 1>. <Subject 3> sits on the left and <Subject 2> on the right on the knitted blanket, about half a metre apart, both in three-quarter profile facing each other and looking into each other's eyes. <Subject 2> (S1) leans its head toward <Subject 3>'s round belly, looks directly at <Subject 3> and says in a dry, disapproving tone, <d>[Chinese] 你最近怎么又胖一圈？</d> It closes its mouth and keeps staring at <Subject 3>. <Subject 3> keeps its mouth closed while listening, slowly lifts its chin and looks back at <Subject 2>.\n[Shot 2] At 00:03.300, the shot cuts to a medium close-up of <Subject 3> alone, centred in the frame with space above its ears, on the sofa, facing right toward the off-screen <Subject 2>. <Subject 3> (S2) raises its chin, looks at the off-screen <Subject 2> and says lazily and matter-of-factly, <d>[Chinese] 跌了我就吃，涨了我就庆祝。</d> It closes its mouth and licks its lips once.\n[Shot 3] At 00:07.000, the shot cuts to a medium close-up of <Subject 2> alone, centred in the frame with space above its ears, on the sofa, facing left toward the off-screen <Subject 3>. <Subject 2> (S1) narrows its eyes, the tip of its tail flicks once, it looks at the off-screen <Subject 3> and says in a tired, resigned tone, <d>[Chinese] 那你打算什么时候瘦？</d> It closes its mouth.\n[Shot 4] At 00:09.800, the shot cuts to a close-up of <Subject 3> alone, centred with space above its ears, face nearly frontal and turned a little to the right, eyes on the off-screen <Subject 2>. <Subject 3> (S2) suddenly turns serious, its eyes widen slightly and stay fixed on the off-screen <Subject 2>, and it says slowly and solemnly, <d>[Chinese] 回本那天。</d> It closes its mouth and holds the serious look for a short beat.\n[Shot 5] At 00:11.800, the shot cuts back to the wide shot of <Subject 1>. <Subject 3> on the left and <Subject 2> on the right look at each other in silence for half a beat, then both cats burst out laughing together the way cats would: eyes squeezed shut, mouths open just a little, heads thrown back, bodies shaking with laughter; <Subject 3> rolls over onto its side on the blanket while still laughing, <Subject 2> shakes with laughter and paws at the blanket, until the end. No speech in this shot.\n\noverall_soundscape:\nQuiet apartment afternoon: faint traffic far outside the window, a curtain rustling lightly, the small bell on <Subject 3>'s collar tinkling when it moves, the cats' laughter in the last shot.\n\nnon_diegetic_music:\nN/A",
+ "width": 576,
+ "height": 800,
+ "length": 349,
+ "seed": 2103,
+ "turbo": false,
+ "prefix": "cats/ep1_v3",
+ "images": [
+  "资产/全景首帧.png",
+  "资产/橘猫_头像.png",
+  "资产/蓝猫_头像.png"
+ ],
+ "anchor_frames": [
+  0
+ ],
+ "guides": [
+  {
+   "image": "资产/橘猫中近景.png",
+   "frame": 79
+  },
+  {
+   "image": "资产/蓝猫中近景.png",
+   "frame": 168
+  },
+  {
+   "image": "资产/橘猫正脸中近景.png",
+   "frame": 235
+  },
+  {
+   "image": "资产/全景首帧.png",
+   "frame": 283
+  }
+ ],
+ "audios": [],
+ "steps": 20
+}

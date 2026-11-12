@@ -7,6 +7,7 @@
 - 提示词结构（官方改图写法）：The X in <Picture 1> is <Subject 1>. The target image is …. <Subject 1> is partially preserved: … remain, while …. … from <Picture 1> are removed. 最后写光的方向和影子。
 - 不要拿 H3 Image 出的图再改：一两轮后脸上起纹理、整图发花。要改几处就从原图一次写全。
 - 6 步、cfg 1、euler/simple，是官方模板的设置。
+- ComfyUI 0.44 自带的 PH3ImageConditioning 是预发布版，它的 VAE 和正式发布的 minimax_h3_image_vae_fp16 对不上（size mismatch），不能用；要 0.45.2 以上。环境变量 H3_IMG_NODE 只在你明确要换节点名时用。
 """
 import os, sys
 import comfy
@@ -34,7 +35,7 @@ for seed in seeds:
                              {"class_type": "ImageScaleToTotalPixels", "inputs": {"image": [str(10 + i * 2), 0], "upscale_method": "lanczos",
                                                                                  "megapixels": w * h / 1e6, "resolution_steps": 32}}
         cond[f"images.image_{i + 1}"] = [str(11 + i * 2), 0]
-    p["40"] = {"class_type": "MiniMaxH3ImageConditioning", "inputs": cond}
+    p["40"] = {"class_type": os.environ.get("H3_IMG_NODE", "MiniMaxH3ImageConditioning"), "inputs": cond}
     p["41"] = {"class_type": "ConditioningZeroOut", "inputs": {"conditioning": ["40", 0]}}
     p["42"] = {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["40", 0], "negative": ["41", 0], "latent_image": ["40", 1],
                                                     "seed": seed, "steps": int(arg("--steps", 6)), "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}}

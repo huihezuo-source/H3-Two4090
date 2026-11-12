@@ -48,6 +48,6 @@ ComfyUI 端需要的模型和自定义节点见 `../references/ComfyUI节点与�
 
 ## Windows 新机器装 torch 卡住怎么办
 
-pip 下载 torch 这类 2GB 以上的大包在 Windows 上会无声卡死（文件一直 0 字节）。别重跑 pip，也别删 `%TEMP%\pip-unpack-*` 里上次留下的部分文件：把它拷出来，用 `curl.exe -L -C - --retry 50 --retry-all-errors -o torch.whl <镜像上的 whl 地址>` 续传，再 `pip install torch.whl`。2026-11-11 公司 XW 用这个办法把卡了 70 分钟的安装 35 分钟收尾。
+pip 下载 torch 这类 2GB 以上的大包在 Windows 上会无声卡死（文件一直 0 字节）。别重跑 pip，也别删 `%TEMP%\pip-unpack-*` 里上次留下的部分文件：把它拷出来，用 `curl.exe -L -C - --retry 50 --retry-all-errors -o torch.whl <镜像上的 whl 地址>` 续传，再 `pip install torch.whl`。2026-11-11 公司 XW 用这个办法把卡了 70 分钟的安装 35 分钟收尾。装 ComfyUI 依赖时阿里云镜像同样会卡（pip-unpack 临时目录 0 字节不动），换 `-i https://pypi.tuna.tsinghua.edu.cn/simple --timeout 60 --retries 10` 一次过。升级 ComfyUI 到 0.45.2 用 `upgrade_comfyui_045.py`（见 references/公司4090使用说明.md）。
 
 双机并行实测（同日）：farm.py 把两段 5 秒片子分给 WJ 和 XW 同时跑，各自 2 分钟（冷加载那台 4.7 分钟），成功 2 失败 0。

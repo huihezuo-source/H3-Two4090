@@ -17,7 +17,7 @@
 把整个文件夹放进 Claude Code 的技能目录：
 
 ```bash
-git clone https://github.com/huihezuo-source/PW-H3-Video.git ~/.claude/skills/h3-video
+git clone https://github.com/huihezuo-source/H3-Two4090.git ~/.claude/skills/h3-video
 ```
 
 之后对 Claude 说“用 H3 把这个故事做成视频”，或者“做一条 AI 短剧”，就会按这套流程走。

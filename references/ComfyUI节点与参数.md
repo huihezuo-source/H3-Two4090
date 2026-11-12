@@ -168,6 +168,8 @@ goto loop
 
 脚本 `scripts/h3_image.py`。模型：`minimax_h3_image_pruned_int8_convrot.safetensors`（21 GB）+ `minimax_h3_image_vae_fp16.safetensors`；文本编码器和 H3 视频共用 `qwen3vl_32b_minimax_h3_nvfp4_awq`。节点：MiniMaxH3ImageConditioning（images 动态输入，image_1 = <Picture 1>，width/height 写目标尺寸）→ ConditioningZeroOut 作负面 → KSampler 6 步、cfg 1、euler/simple → VAEDecode。
 
+ComfyUI 0.44 自带的 PH3ImageConditioning / PH3ImageVAE 是预发布版，和正式发布的模型文件对不上（VAE 报 size mismatch），必须 0.45.2 以上；0.45.2 配 torch 2.11 cu128、comfy-kitchen 0.2.40 也能出图（公司 XW，32GB 内存，400 万像素一张约 1 分钟）。它不听“头在画面外”这类裁切指令，要无头身体图就出完整图再裁。
+
 实测（4090，cu130）：两只狗全景首帧 1728×2368（400 万像素）每张约 29 秒；Qwen-Image-Edit-2511 出 896×1232 每张约 2.4 分钟。H3 Image 一次就把“深棕色杏仁眼、不露眼白”画对了（Qwen 每期都要单独修眼睛），帽子图案和毛发更清楚。缺点：整体偏橙红、更饱和，取景更紧，“屋檐下一盏暖黄色的灯”被画成现代吊灯，要写清“a paper lantern”。不要拿它的输出再改（会发花）。
 
 ## 放大

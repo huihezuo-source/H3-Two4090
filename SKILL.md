@@ -63,6 +63,7 @@ description: 用本地 ComfyUI（MiniMax H3 + Qwen-Image + VoxCPM2）做带对�
 | `ws_progress.py` | 看任务进度（必须用提交时的 client_id） |
 | `asr.py` | faster-whisper 转写，核对配音一字不差 |
 | `speaker_grid.py` | 按台词表逐句出密集帧网格，做说话人检查 |
-| `upscale_video.py` | RealESRGAN 逐帧放大视频 |
+| `recavsr_upscale.py` | ReCaVSR 一步超分放大视频（机器上跑，几十秒，首选） |
+| `upscale_video.py` | RealESRGAN 逐帧放大视频（备用） |
 | `post_subtitle_loud.py` | 烧字幕 + 两遍 loudnorm 到 -14 LUFS |
 | `make_cover.py` | 出 3:4 和 9:16 两版封面 |

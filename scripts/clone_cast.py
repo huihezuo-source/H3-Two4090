@@ -28,7 +28,7 @@ for name, c in cfg["cast"].items():
         if mode == "continuation":
             inp.update({"prompt_audio": [load, 0], "prompt_text": c["ref_text"]})
         p[vc] = {"class_type": "VoxCPM_VoiceCloning", "inputs": inp}
-        seed = cfg.get("seed", 401) + k
+        seed = c.get("seed", cfg.get("seed", 401)) + k  # 单条可写自己的 seed（比如同一句出几条做合唱）
         p[tts] = {"class_type": "VoxCPM_TTS", "inputs": {"model_name": "VoxCPM2", "lora_name": "None", "text": c["text"],
                   "voice_design": "", "cfg": c.get("cfg", 2.0), "steps": 10, "normalize_text": False, "seed": seed,
                   "force_offload": True, "device": "cuda", "dtype": "auto", "voice_config": [vc, 0]}}

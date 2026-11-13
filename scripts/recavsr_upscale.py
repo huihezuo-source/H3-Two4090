@@ -10,7 +10,7 @@
 flashdecoder.safetensors（装法见 references/公司4090使用说明.md 的「ReCaVSR 超分」一节）。
 顺序：先放大无字幕的原片，再 post_subtitle_loud.py 烧字幕（字幕按分辨率自动缩放）。
 """
-import argparse, os, time
+import argparse, os, subprocess, time
 import comfy
 
 ap = argparse.ArgumentParser()
@@ -25,8 +25,14 @@ ap.add_argument("--transformer", default="transformer_int8_convrot.safetensors")
 ap.add_argument("--timeout", type=int, default=3600)
 a = ap.parse_args()
 
+src = a.src
+if os.path.getsize(src) > 100 * 1024 * 1024:   # ComfyUI 上传上限 100 MB：先压一份上传副本（crf 18 对超分输入影响可忽略）
+    os.makedirs(a.out, exist_ok=True)
+    src = os.path.join(a.out, "_upload_copy.mp4")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", a.src, "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p", "-c:a", "copy", src], check=True)
+    print("源文件超过 100 MB，已压成上传副本", os.path.getsize(src) // 2**20, "MB")
 name = f"recavsr_in_{int(time.time())}.mp4"
-comfy.upload(a.src, name)
+comfy.upload(src, name)
 prefix = a.prefix or os.path.splitext(os.path.basename(a.src))[0] + f"_x{a.scale:g}"
 prompt = {
     "1": {"class_type": "LoadVideo", "inputs": {"file": name}},

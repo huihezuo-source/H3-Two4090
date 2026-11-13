@@ -46,7 +46,11 @@ def worker(m, q, out, script, results):
                            env=env, stdout=logf, stderr=subprocess.STDOUT, cwd=os.path.dirname(os.path.abspath(job["job"])) or ".")
         logf.close()
         mins = (time.time() - t) / 60
-        if r.returncode == 0:
+        import glob as _g
+        got = _g.glob(os.path.join(dst, "*.mp4")) + _g.glob(os.path.join(dst, "*.png")) + _g.glob(os.path.join(dst, "*.flac"))
+        if r.returncode == 0 and not got:
+            log(out, f"[{m['name']}] {name} 脚本退出 0 但没有输出文件，按失败处理")
+        if r.returncode == 0 and got:
             log(out, f"[{m['name']}] 完成 {name}，{mins:.1f} 分钟")
             results[name] = m["name"]
         else:

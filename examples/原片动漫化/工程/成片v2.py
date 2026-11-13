@@ -16,10 +16,13 @@ REF = os.path.join(V, "原片.mp4")
 W0, H0, FPS = 1056, 448, 24
 os.makedirs(OUT, exist_ok=True)
 
-ORDER = [("A", 0.0, 12.933), ("B", 12.933, 24.900), ("C", 24.900, 33.000), ("D", 33.000, 40.533), ("T", 40.533, 50.300),
-         ("E", 50.300, 56.733), ("E2", 56.733, 61.433), ("F", 61.433, 73.467), ("G", 73.467, 80.467), ("H", 80.467, 92.800), ("I", 92.800, 101.367),
+ORDER = [("A1", 0.0, 5.667), ("A2", 5.667, 12.933), ("B1", 12.933, 18.033), ("B2", 18.033, 24.900), ("C", 24.900, 33.000), ("D", 33.000, 40.533), ("T", 40.533, 50.300),
+         ("E", 50.300, 56.733), ("E2", 56.733, 61.433), ("F1", 61.433, 67.800), ("F2", 67.800, 73.467), ("G", 73.467, 80.467), ("H1", 80.467, 89.300), ("H2", 89.300, 92.800), ("I", 92.800, 101.367),
          ("J", 101.367, 111.733), ("K", 111.733, 121.167), ("c59", 121.167, 124.133), ("L", 124.133, 132.800),
-         ("M", 132.800, 142.800), ("N", 142.800, 157.000)]
+         ("M1", 132.800, 138.533), ("M2", 138.533, 142.800), ("N1", 142.800, 147.133), ("N2", 147.133, 157.000)]
+# A/B/F/H/N 超过 250 帧会把显存挤爆（每步慢十倍），按真实切点拆成小段；H 是一个长镜头，在 89.3 秒两句话之间拆开，
+# H1 多生成 0.25 秒，拼接时和 H2 的开头溶接，遮掉镜头中间的接缝。
+BLEND = {"H1": 0.25, "B2": 0.25}   # B2 也多生成到 25.4 秒并锚定 c09，和 C 段在 24.9 秒溶接   # 段名 → 与下一段溶接的秒数（该段生成时已多出这段时长）
 TOTAL = 157.0
 
 # 字幕：开始, 结束, 文字（原片台词；16、17 是新词）
@@ -56,7 +59,7 @@ END = (150.5, 157.0, "一切尽在不言中")
 FONT = "Hiragino Sans GB"
 
 
-PICK = {"E": "ref_seg_E_00002_.mp4", "C": "ref_seg_C_00002_.mp4"}   # 段 → 指定用哪个文件名（不指定就用最新的）
+PICK = {"B2": "ref_seg_B2_00001_.mp4"}   # B2 第四版（XW 出的 00001，23:03）；其余段取最新文件   # 段 → 指定用哪个文件名（不指定就用最新的）
 
 
 def latest(k):
@@ -79,13 +82,23 @@ def join():
             cmd = ["ffmpeg", "-v", "error", "-y", "-ss", f"{a:.3f}", "-t", f"{d:.3f}", "-i", REF,
                    "-vf", f"crop=1280:544:0:88,delogo=x=345:y=306:w=290:h=52,scale={W0}:{H0}:flags=lanczos,fps={FPS},format=yuv420p", "-an"]
         else:
-            cmd = ["ffmpeg", "-v", "error", "-y", "-i", latest(k), "-t", f"{d:.3f}", "-vf", f"fps={FPS},scale={W0}:{H0},format=yuv420p", "-an"]
+            cmd = ["ffmpeg", "-v", "error", "-y", "-i", latest(k), "-t", f"{d + BLEND.get(k, 0):.3f}", "-vf", f"fps={FPS},scale={W0}:{H0},format=yuv420p", "-an"]
         subprocess.run(cmd + ["-c:v", "libx264", "-crf", "12", "-preset", "fast", o], check=True)
         n = subprocess.run(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v", "-show_entries", "stream=nb_read_frames",
                             "-of", "csv=p=0", o], capture_output=True, text=True).stdout.strip()
         print(k, f"{d:.3f}s", n, "帧", flush=True)
-        lst.append(f"file '{o}'")
-    open(os.path.join(tmp, "list.txt"), "w").write("\n".join(lst))
+        if lst and lst[-1][0] in BLEND:   # 上一段要和这一段溶接：合成一个文件
+            pk, po, pd = lst.pop()
+            m = os.path.join(tmp, f"{pk}_{k}.mov")
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", po, "-i", o, "-filter_complex",
+                            f"[0:v][1:v]xfade=transition=fade:duration={BLEND[pk]:.3f}:offset={pd:.3f},format=yuv420p",
+                            "-c:v", "libx264", "-crf", "12", "-preset", "fast", m], check=True)
+            n = subprocess.run(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v", "-show_entries", "stream=nb_read_frames",
+                                "-of", "csv=p=0", m], capture_output=True, text=True).stdout.strip()
+            print(f"{pk}+{k} 溶接 {BLEND[pk]}s →", n, "帧", flush=True)
+            k, o, d = f"{pk}_{k}", m, pd + d
+        lst.append((k, o, d))
+    open(os.path.join(tmp, "list.txt"), "w").write("\n".join(f"file '{o}'" for _, o, _ in lst))
     joined = os.path.join(tmp, "joined.mov")
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", os.path.join(tmp, "list.txt"), "-c", "copy", joined], check=True)
     out = os.path.join(OUT, "拼接_草稿.mp4")
@@ -136,13 +149,14 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"
     af = os.path.join(OUT, "_subs.ass")
     open(af, "w").write("\n".join(ass) + "\n")
     vf = f"scale={PW}:{PH}:flags=lanczos,pad={W}:{H}:0:{TOP}:black,fade=t=out:st={TOTAL - 0.8}:d=0.8,subtitles={af}"
-    m = subprocess.run(["ffmpeg", "-hide_banner", "-i", src, "-af", "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
+    m = subprocess.run(["ffmpeg", "-hide_banner", "-i", AUD, "-af", "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
                        capture_output=True, text=True).stderr
     j = json.loads(re.findall(r"\{[^{}]*\}", m)[-1])
     la = (f"loudnorm=I=-14:TP=-1.5:LRA=11:measured_I={j['input_i']}:measured_TP={j['input_tp']}:"
           f"measured_LRA={j['input_lra']}:measured_thresh={j['input_thresh']}:offset={j['target_offset']}:linear=true,afade=t=out:st={TOTAL - 0.9}:d=0.9")
     out = os.path.join(OUT, "散户动漫版v2_成片.mp4")
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-vf", vf, "-af", la, "-t", f"{TOTAL:.3f}", "-c:v", "libx264", "-crf", "17",
+    # 音轨直接用原片（换过新词的）wav，不用放大输出里重编码过的音轨（ReCaVSR 的 SaveVideo 会把音频压糊、偏 21 ms）
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-i", AUD, "-map", "0:v", "-map", "1:a", "-vf", vf, "-af", la, "-t", f"{TOTAL:.3f}", "-c:v", "libx264", "-crf", "17",
                     "-preset", "slow", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", out], check=True)
     print(out)
 

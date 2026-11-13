@@ -7,17 +7,22 @@ REF=os.path.join(V,"原片.mp4")
 ANCHORS=[
  (8.70, 2, "cut", " This is an extreme high-angle shot looking straight down: the police officer is small, walking across the concrete floor past the tyre stacks, his long shadow beside him; nobody else is in the picture; no face detail is needed."),
  (22.30, 8, "mid", ""),
+ (23.60, 8, "mid", ""),
+ (24.50, 8, "mid", ""),
  (49.33, 20, "cut", " A low-angle wide shot looking up at the catwalk with diagonal steel trusses and many thick ropes hanging from the railing; the masked man in the tan jacket is small, walking along the railing; he is the only person."),
  (51.80, 22, "cut", " A wide shot of the warehouse floor: the police officer stands in the middle distance looking toward the gang leader, who stands farther away near the back wall; both are small; nobody is lying on the floor."),
  (57.50, 27, "mid", ""),
  (58.80, 28, "cut", " A medium close-up of the gang leader in his red-and-gold horned mask, mouth slightly open as he speaks, black jacket over white T-shirt; he is the only person in the picture."),
  (86.50, 42, "mid", ""),
+ (89.30, 42, "mid", ""),
  (97.50, 44, "mid", ""),
  (128.00, 62, "midx", " The police officer has turned around to face the camera, bracing with both hands on the metal railing, his face fully lit by the orange fire behind him: eyes narrowed, teeth clenched, hair blown by the blast; his face is a normal drawn anime face with clear eyes, nose and mouth, not a blank plate. The fireball fills the background."),
  (136.60, 65, "cut", " A wide shot of the warehouse interior with a huge orange fireball erupting in the centre and debris flying; there are NO people in the picture."),
+ (140.30, 66, "mid", " The police officer is close to the camera, bent forward and charging out of the flames, hair blown flat and smoking, teeth clenched; fire and flying debris fill the frame behind him; he is the only person in the picture."),
  (142.20, 66, "cut", ""),
+ (145.00, 67, "mid", " The police officer kneels on one knee at the bottom centre of the frame, seen from the front, small against the huge blast behind him, a fallen hostage lying on the floor beside him; he is the only person standing out, his face is small and tense."),
 ]
-REFS_OVERRIDE={58.80:["ZL"], 57.50:["SH"], 128.00:["SH"], 8.70:[], 49.33:[], 51.80:[], 136.60:[], 22.30:["SH"], 86.50:["ZL"], 97.50:["ZL"], 142.20:["SH"]}
+REFS_OVERRIDE={58.80:["ZL"], 57.50:["SH"], 128.00:["SH"], 8.70:[], 49.33:[], 51.80:[], 136.60:[], 22.30:["SH"], 23.60:["SH"], 24.50:["SH"], 86.50:["ZL"], 89.30:["ZL"], 97.50:["ZL"], 142.20:["SH"], 145.00:["SH"], 140.30:["SH"]}
 m=sys.argv[1]; want=[float(x) for x in sys.argv[2:]] or [a[0] for a in ANCHORS]
 env=dict(os.environ, COMFY_URL=ff.URL[m], COMFY_CLIENT_ID="mac-claude"); tmp=os.path.join(HERE,"_anc_"+m); os.makedirs(tmp,exist_ok=True)
 src_dir=os.path.join(V,"首帧","补锚原片帧"); os.makedirs(src_dir,exist_ok=True)

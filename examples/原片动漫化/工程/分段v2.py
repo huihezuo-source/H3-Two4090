@@ -26,13 +26,13 @@ for ln in open(os.path.join(ROOT, "全片", "shots.tsv")):
 T0[69] = 152.0
 
 CH = {
-    "SH": ("散户.png", "the police officer{p}: a middle-aged man with tousled black hair, a light-blue long-sleeve shirt, a dark tie and a dark-blue police tactical vest lettered POLICE"),
-    "ZL": ("主力.png", "the gang leader{p}: a young man in an open black suit jacket over a white T-shirt, a red-and-gold horned opera mask covering the upper half of his face, red gloves"),
-    "YZ": ("游资.png", "the masked woman{p}: long wet dark hair, a green-and-gold half mask over her eyes, a purple leather jacket with star pins, holding a pistol"),
-    "LH": ("量化.png", "the masked knife man{p}: a thin man in a worn tan trench coat, a blue painted mask over his face, blue gloves, carrying a knife"),
-    "SM": ("神秘机构.png", "the hooded henchman{p}: a man in a yellow-green jacket with the hood up and a dark mask"),
-    "KT": ("空头.png", "the masked gunman{p}: a man in a red jacket wearing an orange painted mask, holding a pistol"),
-    "CPO": ("人质CPO.png", "the young hostage{p}: messy black hair, a dark police vest over a blue shirt, blood and dust on his face"),
+    "SH": ("散户_头像_A2.png", "the police officer{p}: a middle-aged man with tousled black hair, a light-blue long-sleeve shirt, a dark tie and a dark-blue police tactical vest lettered POLICE"),
+    "ZL": ("主力_头像.png", "the gang leader{p}: a young man in an open black suit jacket over a white T-shirt, a red-and-gold horned opera mask covering the upper half of his face, red gloves"),
+    "YZ": ("游资_头像.png", "the masked woman{p}: long wet dark hair, a green-and-gold half mask over her eyes, a purple leather jacket with star pins, holding a pistol"),
+    "LH": ("量化_头像.png", "the masked knife man{p}: a thin man in a worn tan trench coat, a blue painted mask over his face, blue gloves, carrying a knife"),
+    "SM": ("神秘机构_头像.png", "the hooded henchman{p}: a man in a yellow-green jacket with the hood up and a dark mask"),
+    "KT": ("空头_头像.png", "the masked gunman{p}: a man in a red jacket wearing an orange painted mask, holding a pistol"),
+    "CPO": ("CPO_头像.png", "the young hostage{p}: messy black hair, a dark police vest over a blue shirt, blood and dust on his face"),
 }
 NAME = {"SH": "the police officer", "ZL": "the gang leader", "YZ": "the masked woman", "LH": "the masked knife man",
         "SM": "the hooded henchman", "KT": "the masked gunman", "CPO": "the young hostage"}
@@ -166,16 +166,58 @@ SEGS = {
 EXTRA_ANCHORS = [
     (8.70, "c02_8.70", "cut", "an extreme high-angle shot looking straight down at the small police officer walking across the floor past the tyre stacks"),
     (22.30, "c08_22.30", "mid", ""),
+    (23.60, "c08_23.60", "mid", ""),   # B2 第一版 23.15 秒起提前插了仓库全景，补锚压住
+    (24.50, "c08_24.50", "mid", ""),   # B2 三版都在 24.0 秒提前切镜，再按一张
     (49.33, "c20_49.33", "cut", "a low-angle wide shot looking up at the catwalk and trusses, the masked knife man small on the railing"),
     (51.80, "c22_51.80", "cut", "a wide shot: the police officer stands in the middle distance, the gang leader farther away near the back wall"),
     (57.50, "c27_57.50", "mid", ""),
     (58.80, "c28_58.80", "cut", "a medium close-up of the gang leader in his horned mask, speaking"),
     (86.50, "c42_86.50", "mid", ""),
+ (89.30, "c42_89.30", "mid", ""),
     (97.50, "c44_97.50", "mid", ""),
     (128.00, "c62_128.00", "midx", ""),
     (136.60, "c65_136.60", "cut", "a wide shot of a huge fireball erupting in the warehouse, nobody in frame"),
-    (142.20, "c66_142.20", "cut", "the police officer close in the flames, bursting forward"),
+    (140.30, "c66_140.30", "mid", ""),   # M 第一版 139.8–142.1 秒插了仓库全景，补锚压住
+    (142.20, "c66_142.20", "mid", ""),   # 原片 142.2 秒只是火光闪白不是切镜：标成 cut 后 M2 真的切了个脸部特写
+    (145.00, "c67_145.00", "mid", ""),   # N1 首帧漏了跪在底部中间的散户，补一张带他的锚帧
 ]
+
+ANCHOR_T = {fn: t for t, fn, _, _ in EXTRA_ANCHORS}   # 锚帧名 → 绝对秒（拆分段用锚帧当首帧）
+
+
+def _sub(parent, a, b, want, summ, chars=None):
+    """从整段切出子段：A/B/F/H/N 超过 250 帧（1056×448 + 参考视频 + 头像母版）会把 24G 显存挤爆，每步慢十倍以上，
+    所以按真实切点拆成 10 秒以内的小段。want 是镜头号或锚帧名；参考角色只保留在子段里出镜的。"""
+    pa, pb, scene, pchars, psumm, shots = SEGS[parent]
+    bym = {n: d for n, d in shots}
+    sub_shots = []
+    for n in want:
+        if isinstance(n, str):   # 锚帧名：用该锚帧当这一子段的首帧，描述沿用所属镜头
+            d = bym[int(n[1:3])]
+        else:
+            d = bym[n]
+        sub_shots.append((n, d.replace("for all 12 seconds", "for the whole segment")))
+    chars = chars or [c for c in pchars if any("{" + c + "}" in d for _, d in sub_shots)]
+    return (a, b, scene, chars, summ, sub_shots)
+
+
+SEGS["A1"] = _sub("A", 0.0, 5.667, [1], "Seen from behind and above, the officer slowly raises his head toward rows of hostages hanging upside down from the beams.")
+SEGS["A2"] = _sub("A", 5.667, 12.933, [2], "The officer walks cautiously into the middle of the warehouse between stacks of tyres, looking up at the hostages; then a high-angle view looking straight down at him crossing the floor.")
+SEGS["B1"] = _sub("B", 12.933, 18.033, [3, 4, 5, 6], "Close-ups alternate between hanging hostages and the officer staring up in horror.")
+SEGS["B2"] = _sub("B", 18.033, 24.900, [7, 8], "A close-up of a hanging hostage, then a medium shot of the officer slowly turning his head as he looks up; at the end the shot cuts to a close-up of a hanging hostage.")
+# 两版 B2 都在 c08 末尾（23.15 / 24.03 秒）自己编了一个仓库全景：模型知道 24.9 秒要切镜就提前乱切。
+# 多生成到 25.4 秒并把真正的下一镜 c09 锚在 24.9 秒，让它切到对的镜头；成片只取到 24.9 秒。
+SEGS["B2"] = SEGS["B2"][:1] + (25.400,) + SEGS["B2"][2:5] + (SEGS["B2"][5] + [(9, "a close-up of an upside-down hostage's bruised face in the lower right, legs and ropes above; lips closed.")],)
+SEGS["F1"] = _sub("F", 61.433, 67.800, [29, 30, 31, 32, 33], "The leader holds a gun to the officer's head; the officer looks up in horror and is kicked down; the knife man cuts a rope.")
+SEGS["F2"] = _sub("F", 67.800, 73.467, [34, 35, 36, 37, 38], "Hostages drop from the beams; the officer sits collapsed on the floor and screams; the leader mocks him.")
+SEGS["H1"] = _sub("H", 80.467, 89.550, [42], "The leader stands and lectures the officer, mocking him; one locked-off medium shot, no camera move.")   # 多出 0.25 秒给拼接溶接
+SEGS["H2"] = _sub("H", 89.300, 92.800, ["c42_89.30"], "The leader keeps lecturing the officer in the same locked-off medium shot, no camera move.")
+# M 两个种子都在 139.8–142.1 秒（散户冲出火海的镜头中段）插进仓库全景，140.3 秒的锚帧也压不住：拆成 M1（两个爆炸空镜）和 M2（只有 c66 一个镜头，提示词里没有全景可串）
+SEGS["M1"] = _sub("M", 132.800, 138.533, [64, 65], "Chain explosions tear the empty warehouse apart: a fireball erupts far away and rises to the roof, then blasts rip through the hall with debris and sparks flying; nobody is in frame.")
+SEGS["M2"] = _sub("M", 138.533, 142.800, [66], "One continuous close shot: the officer bursts out of the flames toward the camera, bent forward and gripping a railing, hair blown flat and smoking, fire and flying debris filling the frame behind him for the whole shot; the camera never cuts away to a wide view.")
+SEGS["N1"] = _sub("N", 142.800, 147.133, [67], "The warehouse collapses in the explosions, flames shooting up and debris flying; {SH} kneels small at the bottom centre of the frame in front of the blast, a fallen hostage beside him.")
+SEGS["N1"] = SEGS["N1"][:3] + (["SH"],) + SEGS["N1"][4:5] + ([(67, "a wide shot: the warehouse collapses in the explosions, flames shooting up, debris flying; {SH} kneels small at the bottom centre of the frame, seen from the front, with a fallen hostage on the floor beside him; nobody speaks.")],)
+SEGS["N2"] = _sub("N", 147.133, 157.000, [68, 69], "Daytime exterior: the officer sits dazed on the street beside a fire engine, and the camera settles on his empty face.")
 
 
 def ts(x):
@@ -213,9 +255,12 @@ def build(k, lines=None):
         subj[c] = f"<Subject {len(subj) + 1}>"
         if os.path.exists(mp):
             imgs.append(mp)
-            defs.append(f"{subj[c]} is " + desc.format(p=f" from <Picture {len(imgs)}>") + ".")
+            defs.append(f"{subj[c]} is " + desc.format(p=f" (his or her face, hair and mask exactly as in the head portrait <Picture {len(imgs)}>; clothing and body as in the anchored frames)") + ".")
         else:
             defs.append(f"{subj[c]} is " + desc.format(p=" as drawn in the anchored first frames") + ".")
+    if "SH" in chars and os.path.exists(os.path.join(M, "散户_全身.png")):
+        imgs.append(os.path.join(M, "散户_全身.png"))
+        defs.append(f"<Picture {len(imgs)}> is the full-body view of {subj['SH']}: in every wide or distant shot his whole figure, proportions, hair and face follow this picture so that his face stays the same face even when small.")
     wn = f"<Subject {len(subj) + 1}>"
     defs.append(f"{wn} is " + scene + ".")
     if not imgs:   # 没有角色母版时，把第一镜的首帧当唯一参考图（画风参考），节点至少要一张参考图
@@ -235,9 +280,9 @@ def build(k, lines=None):
             line_txt.append(f"At {ts(max(t, 0))}, {who} says <d>[Chinese] {txt}</d> Only {who}'s mouth moves, in sync with the words.")
     guides, desc_lines, appear = [], [], {c: [] for c in chars}
     for i, (n, d) in enumerate(shots):
-        t = T0[n] - a
+        t = (T0[n] if isinstance(n, int) else ANCHOR_T[n]) - a
         fr = int(round(t * FPS))
-        guides.append({"image": first_frame(n), "frame": fr})
+        guides.append({"image": first_frame(n) if isinstance(n, int) else first_frame_named(n), "frame": fr})
         txt = d.format(**fmt)
         for c in chars:
             if subj[c] in txt:
@@ -247,7 +292,7 @@ def build(k, lines=None):
         else:
             desc_lines.append(f"[Shot {i + 1}] At {ts(t)}, the shot cuts to its anchored first frame: {txt}")
     for t, fn, kind, d in EXTRA_ANCHORS:
-        if a <= t < b - 0.2:
+        if a + 0.05 <= t < b - 0.2:   # 正好在段起点的锚帧由 shots 表当首帧，不重复
             guides.append({"image": first_frame_named(fn), "frame": int(round((t - a) * FPS))})
             if kind == "cut":
                 desc_lines.append(f"[Shot {len(desc_lines) + 1}] At {ts(t - a)}, the shot cuts (exactly as <Video 1> does) to its anchored first frame: {d}.")

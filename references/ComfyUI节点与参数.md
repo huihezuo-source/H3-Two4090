@@ -228,3 +228,25 @@ ComfyUI 0.44 自带的 PH3ImageConditioning / PH3ImageVAE 是预发布版，和�
 - 输出：`auto` 走 HEVC NVENC CQ19，Mac 上接着 `post_subtitle_loud.py` 烧字幕时重编成 x264。
 
 备用：`upscale_video.py` 用 spandrel 加载 RealESRGAN_x2，Mac 上走 mps 逐帧推理，再用 ffmpeg lanczos 缩放到目标尺寸。真实动物毛发会变塑料，只在没有 ReCaVSR 的机器上用。
+
+## 2026-11-14：原片逐帧锁结构——H3 Fun ControlNet Union（实测）
+
+参考视频模式（Ref2VA 的 `<Video 1>`）只是"照着意思重新表演"，切点早 0.4–0.9 秒、构图自己编；H3 Image 首帧也是参考生成不是描摹（68 个首帧对原片轮廓匹配均值 0.51）。要"只换画风、其余一模一样"，必须用 ControlNet 让原片逐帧控制结构。
+
+- 模型：`Comfy-Org/MiniMax-H3/model_patches/minimax_h3_fun_controlnet_union_2.0_pruned_int8_convrot.safetensors`（4.53 GB，放 `models/model_patches/`，不用重启）。v1 int8 2.3 GB 也可。
+- 接法（`scripts/h3_ref2va.py` 的 `controlnet` 字段）：LoadVideo → GetVideoComponents → `MiniMaxH3FunControlNetApply`(model, model_patch=ModelPatchLoader, vae, strength, start_percent 0, end_percent 1, control_video) → 模型链末尾，其余 Ref2VA 照旧（参考图、锁音频）。不要再用 AddGuide 锚首帧（首帧构图不准会和控制打架）；参考图放头像母版 + 一张动漫帧当画风。
+- 控制视频：原片按输出宽高、24 fps 裁好，Canny **40/110 + bilateral(7,30,5) + 2×2 加粗**。细线 90/200 在动态模糊的大特写上几乎没线（边缘密度 0.007），模型就自由发挥；加粗加密后特写密度 0.03，构图才跟上。**每个镜头先量边缘密度，<0.01 要降阈值。** 原片烧入的水印、标签要在控制视频里涂黑，否则会画出文字轮廓。
+- 强度：**1.5**。1.0 特写不跟；2.5 整段发黑糊成纹理、脸变实拍质感（匹配分数反而虚高，看图就知道）。
+- 效果（10 秒 243 帧、1056×448、20 步 17.5 分钟/4090）：切点逐帧对齐（≤1–2 帧），轮廓匹配 0.59（Ref2VA 同段 0.42），口型按锁定音频对上。弱点：原片里又小又暗的人（远处人质、暗处站着的人）会被丢掉或挪到别的镜头，需要单独降阈值/叠深度/提示词点名。
+- 4 步 turbo LoRA 可以和 ControlNet 叠（`turbo: true` 且 steps 4，约 5 分钟一段）用来试参，交付用 20 步。显存：补丁 4.3 GB + 主模型 20 GB 动态加载，243 帧没溢出。
+- 量化脚本：`工程/逐帧对比诊断.py`（整片）和 `工程/段对比.py`（单段，可带旧版对照），指标是"生成帧的线条落在原片轮廓 ±2px 内的比例"，乱配 0.36、一样 0.99。
+
+## 2026-11-15：参考片仿做——H3 Image 参考帧构图 + 一次生成多镜头 + 动作帧锚定（股民的晚餐）
+
+- **首帧**：`h3_image.py` 不带 `--img` 也能纯文字出图，但拿参考片的帧当 `<Picture 1>`（"keeps exactly the camera angle, framing and layout of <Picture 1> but changes…"）构图和色调稳得多，连镜像改造（泥墙→落地窗、灯泡→吊灯）也能用同一帧。1504×2672 XW 约 1 分钟、WJ 约 2 分钟。
+- **尺寸**：H3 视频宽高必须是 32 的倍数，432×768 报 `shape '[1, 24, 1, 1, 24, 2, 13, 2]' is invalid`；用 448×800（9:16）。
+- **一次生成 15 秒多镜头**：362 帧；首帧 `anchor_frames [0]`，切点帧 `guides` 锚 134/221，动作帧（关灯、换盘）锚 292/300。两处切点在 4 步和 20 步里都卡在帧上。
+- **动作帧来源**：4 步草稿里偶然做对的动作（伸手到灯泡），直接截那一帧（生成尺寸）当 guide，20 步正式版就稳定复现；只靠提示词 20 步会把动作丢掉。暗场帧用程序把亮帧压暗（乘以 (0.17,0.20,0.30)，灯泡区域遮罩到 15%），别用 H3 Image 改图（脸起纹理）。
+- **音乐**：non_diegetic_music 写 "very quiet… beginning at 5 s" 时 4 步/20 步都几乎无声（-40 dB）；写 "clearly audible, moderate volume, from the very first second" 就有（-18 dB）。
+- **ReCaVSR 2.5×** 丢末尾 4 帧（362→358）；1120×2000 用 `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`。
+- 脚本和记录：`examples/股民的晚餐/`。

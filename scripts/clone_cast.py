@@ -6,10 +6,12 @@ cast.json：
   "prefix": "cast", "seed": 401,
   "modes": ["isolated", "continuation"],   # isolated 只给参考音；continuation 再加参考音原文，学得更像但原文必须一字不差
   "cast": {
-    "hero": {"ref": "ref_hero.wav", "ref_text": "参考音里说的原文", "text": "要说的新台词"}
+    "hero": {"ref": "ref_hero.wav", "ref_text": "参考音里说的原文", "text": "要说的新台词",
+             "voice_design": "可选：这句的情绪和说法，比如“崩溃大哭着哀求，哭腔很重，边哭边说”"}
   }
 }
 参考音从原片取时：先用 demucs 分离人声，按台词时间切出这个角色的几句，中间留 0.35 秒静音拼起来，5–10 秒最好。
+每句都按剧情写 voice_design：哭、喊、气声、独白的声音和正常说话不一样，不写就会全片一个平调。
 背景里有带人声的歌、或只剩一两个字的角色，取不出干净参考音，改用 voice_design.py 设计。
 """
 import json, os, sys
@@ -30,7 +32,7 @@ for name, c in cfg["cast"].items():
         p[vc] = {"class_type": "VoxCPM_VoiceCloning", "inputs": inp}
         seed = c.get("seed", cfg.get("seed", 401)) + k  # 单条可写自己的 seed（比如同一句出几条做合唱）
         p[tts] = {"class_type": "VoxCPM_TTS", "inputs": {"model_name": "VoxCPM2", "lora_name": "None", "text": c["text"],
-                  "voice_design": "", "cfg": c.get("cfg", 2.0), "steps": 10, "normalize_text": False, "seed": seed,
+                  "voice_design": c.get("voice_design", ""), "cfg": c.get("cfg", 2.0), "steps": 10, "normalize_text": False, "seed": seed,
                   "force_offload": True, "device": "cuda", "dtype": "auto", "voice_config": [vc, 0]}}
         p[save] = {"class_type": "SaveAudio", "inputs": {"audio": [tts, 0],
                    "filename_prefix": f"{cfg.get('prefix', 'cast')}/{name}_{mode}"}}

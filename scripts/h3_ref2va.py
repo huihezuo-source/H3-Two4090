@@ -15,6 +15,9 @@ job.json：
   "shift": null,                                 # 可选 [video, audio]，一般不用
   "turbo": false,                                # true = 4 步加速 LoRA（minimax_h3_ref2v_turbo_4step_v0.1），euler/simple，shift 12/3，约快 3 倍
   "loras": [],                                   # 可选 [["h3_character_swap_v1.5.safetensors", 1.0]]：换人 LoRA，配 videos（原片）+ guides 锁音频
+  "controlnet": null,                            # 可选，逐帧结构控制（MiniMax-H3-Fun-Controlnet-Union，放 models/model_patches）：
+                                                 # {"video": "ctrl.mp4", "patch": "minimax_h3_fun_controlnet_union_2.0_pruned_int8_convrot.safetensors", "strength": 1.0, "start": 0.0, "end": 1.0}
+                                                 # video 是 24fps、与输出同宽高的控制视频（Canny/HED/深度/骨架之一，union 模型按画面内容自己识别），帧数不够则定格最后一帧
   "vsa": null                                    # 配合 turbo：稀疏注意力比例（如 0.75），要装 ComfyUI-Ref2VA-VSA 节点和 fasth3_vsa_gate.safetensors，且 PyTorch 必须是 CUDA 13 版（cu128 会报 Backend cuda disabled）
 }
 旁白段的 prompt 里不要写任何台词；一次生成只有一个发声来源。
@@ -39,6 +42,15 @@ if a.get("turbo"):
 if a.get("shift"):
     p["2"] = {"class_type": "MiniMaxH3SigmaShift", "inputs": {"model": model, "shift_video": a["shift"][0], "shift_audio": a["shift"][1]}}
     model = ["2", 0]
+if a.get("controlnet"):
+    c = a["controlnet"]
+    name = comfy.upload(c["video"], f"h3c_{os.path.basename(c['video'])}")
+    p["90"] = {"class_type": "LoadVideo", "inputs": {"file": name}}
+    p["91"] = {"class_type": "GetVideoComponents", "inputs": {"video": ["90", 0]}}
+    p["92"] = {"class_type": "ModelPatchLoader", "inputs": {"name": c.get("patch", "minimax_h3_fun_controlnet_union_2.0_pruned_int8_convrot.safetensors")}}
+    p["93"] = {"class_type": "MiniMaxH3FunControlNetApply", "inputs": {"model": model, "model_patch": ["92", 0], "vae": ["4", 0], "strength": c.get("strength", 1.0),
+                                                                     "start_percent": c.get("start", 0.0), "end_percent": c.get("end", 1.0), "control_video": ["91", 0]}}
+    model = ["93", 0]
 p["3"] = {"class_type": "CLIPLoader", "inputs": {"clip_name": os.environ.get("H3_CLIP", "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"), "type": "minimax", "device": "default"}}
 p["4"] = {"class_type": "VAELoader", "inputs": {"vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"}}
 p["5"] = {"class_type": "VAELoader", "inputs": {"vae_name": "minimax_h3_audio_vae_fp32.safetensors"}}

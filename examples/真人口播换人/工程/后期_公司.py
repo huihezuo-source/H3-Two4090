@@ -10,9 +10,14 @@ out = os.path.join(V, "成片"); os.makedirs(out, exist_ok=True); tmpd = os.path
 env = dict(os.environ, COMFY_CLIENT_ID="mac-claude", COMFY_URL={"wj": "http://127.0.0.1:18188", "xw": "http://127.0.0.1:18189"}[m])
 # 0. 闪回检测 + 光流补顺（跳变帧及其前后各 1 帧）
 import re, ast
-chk = subprocess.run([PY, os.path.join(HERE, "闪回检测.py"), src], capture_output=True, text=True).stdout
+ORIG = os.path.join(HERE, "openjutsu", "oj_video_clean.mp4")   # 去字幕原片，用来对照
+chk = subprocess.run([PY, os.path.join(HERE, "闪回检测.py"), src, "--src", ORIG], capture_output=True, text=True).stdout
 big = ast.literal_eval(re.search(r"异常帧\(z>6\) \d+ 个: (\[.*?\])", chk).group(1))
-print("闪回检测：", chk.strip().splitlines()[-1] if chk.strip() else chk)
+bgcut = ast.literal_eval(re.search(r"背景跳切\(z>6\) \d+ 个: (\[.*?\])", chk).group(1))
+print("闪回检测：\n" + chk.strip())
+# 背景跳切（人没动、背景整个换掉）补帧救不了，原片此处连续就必须重出；FORCE=1 才硬做
+if bgcut and "生成缺陷" in chk and not os.environ.get("FORCE"):
+    sys.exit(f"背景跳切 {bgcut}：原片此处连续，属于生成缺陷，请重出这一条（FORCE=1 可强行继续）")
 if big:
     fixed = os.path.join(tmpd, "0_补帧.mp4"); cur = src
     for n, i in enumerate(big):

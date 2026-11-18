@@ -250,3 +250,17 @@ ComfyUI 0.44 自带的 PH3ImageConditioning / PH3ImageVAE 是预发布版，和�
 - **音乐**：non_diegetic_music 写 "very quiet… beginning at 5 s" 时 4 步/20 步都几乎无声（-40 dB）；写 "clearly audible, moderate volume, from the very first second" 就有（-18 dB）。
 - **ReCaVSR 2.5×** 丢末尾 4 帧（362→358）；1120×2000 用 `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`。
 - 脚本和记录：`examples/股民的晚餐/`。
+
+## 2026-11-16：真人换人（Ref2VA + Character Swap LoRA）在 24 GB 公司机上的硬限制（口播换人实测，11-18 订正）
+
+- **参考图不缩放**：`h3_ref2va.py` 的 `images` 直接走 LoadImage，多大就按多大编码。三张 1504×2672 的参考图 + 362 帧 512×896 参考视频 + 音频，XW 上 5220 s/步（20 步要 29 小时），WJ 第 1 步都走不完；草稿只带一张同样大的图时是 108/197 s/步。缩到 504×896 后三张仍溢出。**带参考视频的 362 帧任务只带一张参考图**，要塞多种信息（身份、衣服、牙齿）就合成到那一张里——这里用 H3 Image 出的「说话露齿半身照」（同背景、同衣服、张嘴露上齿）当唯一 `<Picture 1>`，牙齿立刻稳定。
+- **20 步跑不动**：同一输入，非 turbo 20 步（res_multistep、无 shift）在两台机器上全部停在「0/20 Model Initializing」20–100 分钟；turbo 4 步（euler、shift 12/3）正常 108–197 s/步。模型加载日志完全相同（19995 MB staged、208 patches，BasicGuider 无 CFG），原因未查清。**结论：这类任务一律 `turbo: true` 4 步**，交付靠 ReCaVSR 1.5× + 手机质感补细节；20 步只在 ≤250 帧时考虑。
+- **参考音会漏词（最重要）**：`<Audio 1>` 不只给音色，**参考音里念的词会被带进生成语音**。三段参考音当时念的正是同一条台词，结尾是「宁可错过也不想再站岗」；结果五次出片都在这一句念乱（掉字、挪到句尾、变成「宁可撑」「宁可走」），把台词里这四个字删掉后它还是冒出来。把参考音按词级时间戳裁到前半句为止（7–8 秒）后，ASR 两个模型都与台词逐字一致。**规则：声音参考音的文本要么与台词无关，要么只覆盖台词开头；绝不用念着同一段台词后半句的音频。**
+- **台词长度**：87 字在 15 秒里念不完（最后一句被吞）；64 字稳。字数是次要因素，先排除上面的参考音漏词再怀疑字数。每条出片后必做 ASR 对照（`scripts/asr.py`，faster-whisper small/medium 两遍，看词级时间戳），同音字放过，缺字/乱序重出。
+- **闪回和背景跳切**：`examples/真人口播换人/工程/闪回检测.py in.mp4 --src 原片.mp4` 两项指标：A 整帧跳变（相邻帧灰度差 z>6）；B 背景跳切（只看人物以外四周区域的相邻帧相关系数骤降，z>6——人没动、背景整个换掉的“秒切场景”）。**报警后必须对照原片同一帧**：原片 z<3 就是生成缺陷，重出；不许看一张条带就判成“快速转头”（实际吃过这个亏：第 262 帧报警被放过，用户一眼看出是换了场景）。单帧跳变可用 `补帧.py`（DIS 光流双向插值 ±1 帧）救，整段背景换掉只能重出。
+- **牙齿检查**：`牙齿检查.py` 用 Haar 人脸框取下 40% 当嘴区，每 2 帧拼图，一眼看牙齿是否闪烁/多排。
+- **投任务前看外部占用**：`GET /system_stats` 里 `vram_total - vram_free - torch_vram_total` 大于 2 GB＝显卡被别的程序占着，H3 上去必溢出（实测一条 4 步任务跑了 10 小时，9087 s/步）。这时不投，换机器或等。
+- **隧道与诊断**：RustDesk 隧道窗口关掉后端口不再监听，`/Applications/RustDesk.app/Contents/MacOS/RustDesk --port-forward <设备ID>` 直接按保存的规则重开，无需屏幕；`open rustdesk://…` 无效。端口在监听但 curl 返回 000 时看 `~/Library/Logs/RustDesk/RustDesk_rCURRENT.log`：`Failed to access remote 127.0.0.1:8188`＝对面在线但 ComfyUI 没启动。隧道上传素材偶尔卡住（提交 19 分钟后 ComfyUI 才 got prompt），提交后要看日志确认。
+- **会话中断**：本地的 `--wait`/调度进程会被带走，远端照常算完。重连后先查 `/history` 和输出目录（`/view?filename=…&subfolder=…&type=output`），别急着重投。
+- **中断**：POST /interrupt 这次 1 分钟内生效（不必等整步）。
+- 脚本与逐步记录：`examples/真人口播换人/`。
